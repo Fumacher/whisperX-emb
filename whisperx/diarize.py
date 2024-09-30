@@ -34,10 +34,13 @@ class DiarizationPipeline:
         diarize_df = pd.DataFrame(segments.itertracks(yield_label=True), columns=['segment', 'label', 'speaker'])
         diarize_df['start'] = diarize_df['segment'].apply(lambda x: x.start)
         diarize_df['end'] = diarize_df['segment'].apply(lambda x: x.end)
-        
-        print(diarize_df)
 
-        # Extract embeddings for each segment
+        min_segment_duration = 1  # Minimum duration in seconds
+
+        # Filter out short segments
+        diarize_df = diarize_df[diarize_df['end'] - diarize_df['start'] >= min_segment_duration]
+
+        # Now extract embeddings
         diarize_df['embedding'] = diarize_df.apply(
             lambda row: self.extract_embedding(audio_data['waveform'], row['start'], row['end']),
             axis=1
@@ -51,7 +54,9 @@ class DiarizationPipeline:
         end_sample = int(end * SAMPLE_RATE)
         cropped_waveform = waveform[:, start_sample:end_sample]
 
-        print("STILL OK BEFORE CALL METHOD")
+        # Check if the cropped waveform is valid
+        if cropped_waveform.shape[1] < self.embedding_model.min_num_samples:
+            return np.zeros((1, self.embedding_model.dimension))  # Return a zero vector for short segments
 
         # Pass the cropped waveform to the embedding model
         embedding = self.embedding_model(cropped_waveform)
