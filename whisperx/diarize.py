@@ -37,7 +37,7 @@ class DiarizationPipeline:
         
         # Extract embeddings for each segment
         diarize_df['embedding'] = diarize_df.apply(
-            lambda row: self.embedding_model.crop(audio_data['waveform'], torch.tensor([[row['segment'].start, row['segment'].end]])),
+            lambda row: self.embedding_model.crop(audio_data['waveform'], torch.tensor([[row['start'], row['end']]])),
             axis=1
         )            
         return diarize_df
