@@ -37,10 +37,21 @@ class DiarizationPipeline:
         
         # Extract embeddings for each segment
         diarize_df['embedding'] = diarize_df.apply(
-            lambda row: self.embedding_model.crop(audio_data['waveform'], torch.tensor([[row['start'], row['end']]])),
+            lambda row: self.extract_embedding(audio_data['waveform'], row['start'], row['end']),
             axis=1
-        )            
+        )
         return diarize_df
+
+
+    def extract_embedding(self, waveform: torch.Tensor, start: float, end: float) -> np.ndarray:
+        # Crop the waveform to the segment's start and end times
+        start_sample = int(start * SAMPLE_RATE)
+        end_sample = int(end * SAMPLE_RATE)
+        cropped_waveform = waveform[:, start_sample:end_sample]
+
+        # Pass the cropped waveform to the embedding model
+        embedding = self.embedding_model(cropped_waveform)
+        return embedding
 
 
 def assign_word_speakers(diarize_df, transcript_result, fill_nearest=False):
