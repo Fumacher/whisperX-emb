@@ -185,7 +185,7 @@ print(result["segments"]) # after alignment
 # delete model if low on GPU resources
 # import gc; gc.collect(); torch.cuda.empty_cache(); del model_a
 
-# 3. Assign speaker labels
+# 3. Assign speaker labels and generate embeddings
 diarize_model = whisperx.DiarizationPipeline(use_auth_token=YOUR_HF_TOKEN, device=device)
 
 # add min/max number of speakers if known
