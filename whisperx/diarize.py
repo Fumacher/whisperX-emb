@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from pyannote.audio import Pipeline
 from typing import Optional, Union
+from pyannote.audio.pipelines.speaker_verification import PretrainedSpeakerEmbedding
 import torch
 
 from .audio import load_audio, SAMPLE_RATE
@@ -11,12 +12,16 @@ class DiarizationPipeline:
     def __init__(
         self,
         model_name="pyannote/speaker-diarization-3.1",
+        embedding_model_name="pyannote/embedding",
         use_auth_token=None,
         device: Optional[Union[str, torch.device]] = "cpu",
     ):
         if isinstance(device, str):
             device = torch.device(device)
         self.model = Pipeline.from_pretrained(model_name, use_auth_token=use_auth_token).to(device)
+        # Load speaker embedding model
+        self.embedding_model = PretrainedSpeakerEmbedding(embedding_model_name, device=device)
+
 
     def __call__(self, audio: Union[str, np.ndarray], num_speakers=None, min_speakers=None, max_speakers=None):
         if isinstance(audio, str):
@@ -26,9 +31,15 @@ class DiarizationPipeline:
             'sample_rate': SAMPLE_RATE
         }
         segments = self.model(audio_data, num_speakers = num_speakers, min_speakers=min_speakers, max_speakers=max_speakers)
-        diarize_df = pd.DataFrame(segments.itertracks(yield_label=True, yield_emb=True), columns=['segment', 'label', 'speaker', 'embedding'])
+        diarize_df = pd.DataFrame(segments.itertracks(yield_label=True), columns=['segment', 'label', 'speaker'])
         diarize_df['start'] = diarize_df['segment'].apply(lambda x: x.start)
         diarize_df['end'] = diarize_df['segment'].apply(lambda x: x.end)
+        
+        # Extract embeddings for each segment
+        diarize_df['embedding'] = diarize_df.apply(
+            lambda row: self.embedding_model(row['segment'].start, row['segment'].end, audio_data['waveform']),
+            axis=1
+        )            
         return diarize_df
 
 
