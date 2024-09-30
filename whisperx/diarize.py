@@ -35,6 +35,8 @@ class DiarizationPipeline:
         diarize_df['start'] = diarize_df['segment'].apply(lambda x: x.start)
         diarize_df['end'] = diarize_df['segment'].apply(lambda x: x.end)
         
+        print(diarize_df)
+
         # Extract embeddings for each segment
         diarize_df['embedding'] = diarize_df.apply(
             lambda row: self.extract_embedding(audio_data['waveform'], row['start'], row['end']),
@@ -48,6 +50,8 @@ class DiarizationPipeline:
         start_sample = int(start * SAMPLE_RATE)
         end_sample = int(end * SAMPLE_RATE)
         cropped_waveform = waveform[:, start_sample:end_sample]
+
+        print("STILL OK BEFORE CALL METHOD")
 
         # Pass the cropped waveform to the embedding model
         embedding = self.embedding_model(cropped_waveform)
