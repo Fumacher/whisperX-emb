@@ -45,6 +45,18 @@ class DiarizationPipeline:
             lambda row: self.extract_embedding(audio_data['waveform'], row['start'], row['end']),
             axis=1
         )
+
+        # Generate speaker embeddings
+        speaker_embeddings = (
+            diarize_df.groupby('speaker')['embedding']
+            .apply(lambda x: np.mean(np.stack([emb for emb in x if np.linalg.norm(emb) > 1e-6]), axis=0)
+                    if len(x[x.apply(lambda emb: np.linalg.norm(emb) > 1e-6)]) > 0 else np.zeros_like(x.iloc[0]))
+            .reset_index(name='speaker_embedding')
+        )
+
+        # Merge the average speaker embeddings with the original diarize_df
+        diarize_df = pd.merge(diarize_df, speaker_embeddings, on='speaker', how='left')
+
         return diarize_df
 
 
