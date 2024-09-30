@@ -20,7 +20,7 @@ class DiarizationPipeline:
             device = torch.device(device)
         self.model = Pipeline.from_pretrained(model_name, use_auth_token=use_auth_token).to(device)
         # Load speaker embedding model
-        self.embedding_model = PretrainedSpeakerEmbedding(embedding_model_name, device=device)
+        self.embedding_model = PretrainedSpeakerEmbedding(embedding_model_name, device=device, use_auth_token=use_auth_token)
 
 
     def __call__(self, audio: Union[str, np.ndarray], num_speakers=None, min_speakers=None, max_speakers=None):
